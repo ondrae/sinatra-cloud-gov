@@ -2,9 +2,12 @@
 #
 # Check https://circleci.com/docs/2.0/language-ruby/ for more details
 #
-version: 2
+version: 2.1
+orbs:
+  cloudfoundry: circleci/cloudfoundry@0.1.52
+
 jobs:
-  build:
+  test:
     docker:
       # specify the version you desire here
       - image: circleci/ruby
@@ -57,3 +60,16 @@ jobs:
       - store_artifacts:
           path: /tmp/test-results
           destination: test-results
+
+workflows:
+  version: 2
+  build-deploy:
+    jobs:
+      - test
+      - cloudfoundry/push:
+          endpoint: 'https://api.fr.cloud.gov'
+          appname: andrew-sinatra
+          org: sandbox-gsa
+          space: andrew.hyder
+          manifest: 'manifest.yml'
+          package: '.'
