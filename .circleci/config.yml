@@ -4,7 +4,22 @@
 #
 version: 2
 jobs:
+  deploy:
+    branches:
+      only:
+        - master
+    docker:
+      - image: circleci/ruby
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run: echo "DEPLOY!!!!"
+
   build:
+    branches:
+      ignore:
+        - master
+  
     docker:
       - image: circleci/ruby
 
@@ -51,29 +66,3 @@ jobs:
           path: /tmp/test-results
           destination: test-results
 
-
-  deploy:
-    docker:
-      - image: circleci/ruby
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - run:
-          name: deploy
-          command: echo "DEPLOY!"
-
-
-workflows:
-  version: 2
-
-  test:
-    jobs: 
-      - build
-
-  deploy:
-    jobs:
-      - deploy:
-          filters:
-            branches:
-              only:
-                - master
