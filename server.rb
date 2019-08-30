@@ -1,5 +1,5 @@
 require 'sinatra'
 
 get "/" do
-  "Hello World. This is new."
+  "Hello World. This is new. Hopefully this doesn't get deployed."
 end
