@@ -73,3 +73,6 @@ workflows:
           space: andrew.hyder
           manifest: 'manifest.yml'
           package: '.'
+          filters:
+            branches:
+              only: master
