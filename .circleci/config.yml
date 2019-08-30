@@ -7,15 +7,9 @@ orbs:
   cloudfoundry: circleci/cloudfoundry@0.1.52
 
 jobs:
-  test:
+  build:
     docker:
-      # specify the version you desire here
       - image: circleci/ruby
-
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/postgres:9.4
 
     working_directory: ~/repo
 
@@ -39,7 +33,6 @@ jobs:
             - ./vendor/bundle
           key: v1-dependencies-{{ checksum "Gemfile.lock" }}
 
-      # run tests!
       - run:
           name: run tests
           command: |
@@ -61,18 +54,32 @@ jobs:
           path: /tmp/test-results
           destination: test-results
 
+  deploy-master:
+    docker:
+    - image: circleci/ruby
+    steps:
+      - checkout
+      - run:
+          name: "deploy site"
+          command: echo "DEPLOY!!!!"
+
 workflows:
   version: 2
-  build-deploy:
+  build_test:
     jobs:
-      - test
-      - cloudfoundry/push:
-          endpoint: 'https://api.fr.cloud.gov'
-          appname: andrew-sinatra
-          org: sandbox-gsa
-          space: andrew.hyder
-          manifest: 'manifest.yml'
-          package: '.'
+      - build
+      - test:
+          requires: 
+          - build
+  build_deploy:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only: master
+      - deploy-master:
+          requires: 
+          - build
           filters:
             branches:
               only: master
