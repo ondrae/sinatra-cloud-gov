@@ -2,10 +2,7 @@
 #
 # Check https://circleci.com/docs/2.0/language-ruby/ for more details
 #
-version: 2.1
-orbs:
-  cloudfoundry: circleci/cloudfoundry@0.1.52
-
+version: 2
 jobs:
   build:
     docker:
@@ -54,32 +51,29 @@ jobs:
           path: /tmp/test-results
           destination: test-results
 
-  deploy-master:
+  deploy:
     docker:
     - image: circleci/ruby
     steps:
       - checkout
-      - run:
-          name: "deploy site"
-          command: echo "DEPLOY!!!!"
+      - run: echo "DEPLOY!"
+          # name: "deploy site"
+          # command: bin/deploy-ci.sh
 
 workflows:
   version: 2
-  build_test:
-    jobs:
+  test:
+    jobs: 
       - build
-      - test:
-          requires: 
-          - build
-  build_deploy:
+  deploy:
     jobs:
       - build:
           filters:
             branches:
               only: master
-      - deploy-master:
-          requires: 
-          - build
+      - deploy:
+          requires:
+            - build
           filters:
             branches:
               only: master
