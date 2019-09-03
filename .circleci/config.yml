@@ -2,9 +2,13 @@
 #
 # Check https://circleci.com/docs/2.0/language-ruby/ for more details
 #
-version: 2
+version: 2.1
+
+orbs:
+  cloudfoundry: circleci/cloudfoundry@0.1.52
+
 jobs:
-  build:
+  test:
     docker:
       - image: circleci/ruby
 
@@ -44,28 +48,33 @@ jobs:
               --format progress \
               $TEST_FILES
 
-      - run:
-          name: Install cf cli
-          command: |
-            mkdir -p $HOME/bin
-            export PATH=$HOME/bin:$PATH
-            curl -L "https://cli.run.pivotal.io/stable?release=linux64-binary" | tar xzv -C $HOME/bin
-            cf install-plugin autopilot -f -r CF-Community
-
-      - run:
-          name: Deploy to Cloud.gov
-          command: |
-            if [[ "${CIRCLE_BRANCH}" == "master" ]]; then
-              export PATH=$HOME/bin:$PATH
-              cf login -a https://api.fr.cloud.gov -u $CF_USERNAME -p $CF_PASSWORD -o sandbox-gsa -s andrew.hyder
-              cf zero-downtime-push . -f manifest.yml
-            else
-              echo "Skipped"
-            fi
-
-      # collect reports
-      - store_test_results:
-          path: /tmp/test-results
-      - store_artifacts:
-          path: /tmp/test-results
-          destination: test-results
+workflows:
+  version: 2
+  test:
+    jobs:
+      - test:
+        filters:
+          branches:
+            ignore:
+              - master
+  build_deploy:
+    jobs:
+      - test:
+          filters:
+            branches:
+              only:
+                - master
+      - cloudfoundry/push:
+          appname: andrew-sinatra
+          endpoint: 'https://api.fr.cloud.gov'
+          manifest: 'manifest.yml'
+          org: sandbox-gsa
+          package: '.'
+          space: andrew.hyder
+          requires:
+            - test
+          filters:
+            branches:
+              only:
+                - master
+      
