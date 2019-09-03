@@ -4,22 +4,7 @@
 #
 version: 2
 jobs:
-  deploy:
-    branches:
-      only:
-        - master
-    docker:
-      - image: circleci/ruby
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - run: echo "DEPLOY!!!!"
-
   build:
-    branches:
-      ignore:
-        - master
-  
     docker:
       - image: circleci/ruby
 
@@ -59,10 +44,28 @@ jobs:
               --format progress \
               $TEST_FILES
 
+      - run:
+          name: Install cf cli
+          command: |
+            mkdir -p $HOME/bin
+            export PATH=$HOME/bin:$PATH
+            curl -L "https://cli.run.pivotal.io/stable?release=linux64-binary" | tar xzv -C $HOME/bin
+            cf install-plugin autopilot -f -r CF-Community
+
+      - run:
+          name: Deploy to Cloud.gov
+          command: |
+            if [[ "${CIRCLE_BRANCH}" == "master" ]]; then
+              export PATH=$HOME/bin:$PATH
+              cf login -a https://api.fr.cloud.gov -u $CF_USERNAME -p $CF_PASSWORD -o sandbox-gsa -s andrew.hyder
+              cf zero-downtime-push . -f manifest.yml
+            else
+              echo "Skipped"
+            fi
+
       # collect reports
       - store_test_results:
           path: /tmp/test-results
       - store_artifacts:
           path: /tmp/test-results
           destination: test-results
-
