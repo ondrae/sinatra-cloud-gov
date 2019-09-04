@@ -4,9 +4,6 @@
 #
 version: 2.1
 
-orbs:
-  cloudfoundry: circleci/cloudfoundry@0.1.52
-
 jobs:
   test:
     docker:
@@ -48,6 +45,22 @@ jobs:
               --format progress \
               $TEST_FILES
 
+  deploy:
+    docker:
+      - image: governmentpaas/cf-cli:latest
+
+    steps:
+      - checkout
+      - run:
+          name: deploy to cloud.gov
+          command: |
+            # Set $CF_USERNAME and $CF_PASSWORD in CircleCI settings. 
+            # $CF_ORG, $CF_SPACE, and $APP_NAME can also be set in CircleCI settings or hardcoded here.
+            cf api https://api.fr.cloud.gov
+            cf auth "$CF_USERNAME" "$CF_PASSWORD"
+            cf target -o "sandbox-gsa" -s "andrew.hyder"
+            cf zero-downtime-push "andrew-sinatra" -p '.' -f manifest.yml --buildpack ruby
+
 workflows:
   test:
     jobs:
@@ -55,19 +68,13 @@ workflows:
           filters:
             branches:
               ignore: master
-  build_deploy:
+  test_deploy:
     jobs:
       - test:
           filters:
             branches:
               only: master
-      - cloudfoundry/push:
-          appname: andrew-sinatra
-          endpoint: 'https://api.fr.cloud.gov'
-          manifest: 'manifest.yml'
-          org: sandbox-gsa
-          package: '.'
-          space: andrew.hyder
+      - deploy:
           requires:
             - test
           filters:
