@@ -2,6 +2,4 @@
 applications:
 - name: andrew-sinatra
   random-route: true
-  buildpacks:
-    - ruby_buildpack
   memory: 256M
